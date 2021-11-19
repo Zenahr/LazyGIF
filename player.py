@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,
 from PyQt5.QtWidgets import QMainWindow,QWidget, QPushButton, QAction
 from PyQt5.QtGui import QIcon
 import sys
+import os
 
 class VideoWindow(QMainWindow):
 
@@ -23,6 +24,7 @@ class VideoWindow(QMainWindow):
 
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         self.mediaPlayer.setNotifyInterval(30) # XYms refresh rate (needed for notifs)
+        self.mediaPlayer.setMuted(True) # mute the video
 
         videoWidget = QVideoWidget()
 
@@ -42,7 +44,7 @@ class VideoWindow(QMainWindow):
         # Create new action
         openAction = QAction(QIcon('open.png'), '&Open', self)        
         openAction.setShortcut('Ctrl+O')
-        openAction.setStatusTip('Open movie')
+        openAction.setStatusTip('Import Video')
         openAction.triggered.connect(self.openFile)
 
         # Create exit action
@@ -51,12 +53,18 @@ class VideoWindow(QMainWindow):
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.exitCall)
 
+        # dev tool button
+        devFileAction = QAction(QIcon('open.png'), '&Devtest', self)        
+        devFileAction.setShortcut('Ctrl+R')
+        devFileAction.setStatusTip('')
+        devFileAction.triggered.connect(self.openTestFile)
+
         # Create menu bar and add action
         menuBar = self.menuBar()
-        fileMenu = menuBar.addMenu('&File')
-        #fileMenu.addAction(newAction)
+        fileMenu = menuBar.addMenu('&Actions')
         fileMenu.addAction(openAction)
         fileMenu.addAction(exitAction)
+        fileMenu.addAction(devFileAction)
 
         # Create a widget for window contents
         wid = QWidget(self)
@@ -84,12 +92,22 @@ class VideoWindow(QMainWindow):
 
     def openFile(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Import Video",
-                QDir.homePath())
+                QDir.homePath() + "/Videos",
+                )
+
 
         if fileName != '':
             self.mediaPlayer.setMedia(
                     QMediaContent(QUrl.fromLocalFile(fileName)))
             self.playButton.setEnabled(True)
+            self.mediaPlayer.play()
+
+    def openTestFile(self):
+        self.mediaPlayer.setMedia(
+                QMediaContent(QUrl.fromLocalFile("C:\\Users\\STUDIUM\\Videos\\Apex Legends\\CHEATER FOOTAGE\\2.mp4")))
+        self.playButton.setEnabled(True)
+        self.mediaPlayer.play()
+
 
     def exitCall(self):
         sys.exit(app.exec_())
