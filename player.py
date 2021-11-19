@@ -3,6 +3,8 @@
 # GET THE SLIDER TO WORK ON MOUSE CLICK ANYWHERE: https://stackoverflow.com/questions/52689047/moving-qslider-to-mouse-click-position
 
 
+
+
 """ROADMAP
 
 hotkeys
@@ -70,7 +72,10 @@ class VideoWindow(QMainWindow):
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
         self.setWindowTitle("InstaGif - Instantly Create GIFs") 
-       
+        # self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowFlags(Qt.WindowStaysOnTopHint) # dev only
+        self.setMinimumSize(640, 280)
+
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.statusBar.showMessage("Ready")
@@ -101,12 +106,12 @@ class VideoWindow(QMainWindow):
         self.startMarkerTime    = QLineEdit(self)
         self.startMarkerTime.setStatusTip("Start Marker Time")
         self.startMarkerTime.setEnabled(False)
-        self.startMarkerTime.setPlaceholderText("mm:ss:ms")
+        self.startMarkerTime.setPlaceholderText("ss:ms")
 
         self.endMarkerTime      = QLineEdit(self)
         self.endMarkerTime.setStatusTip("End Marker Time")
         self.endMarkerTime.setEnabled(False)
-        self.endMarkerTime.setPlaceholderText("mm:ss:ms")
+        self.endMarkerTime.setPlaceholderText("ss:ms")
 
         self.symmetrizeCheckbox = QCheckBox("Symmetrize")
         self.symmetrizeCheckbox.setEnabled(False)
@@ -196,11 +201,28 @@ class VideoWindow(QMainWindow):
     def exitCall(self):
         sys.exit(app.exec_())
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape and self.isFullScreen():
+            self.showNormal()
+            event.accept()
+        elif event.key() == Qt.Key_Enter and event.modifiers() & Qt.Key_Alt:
+            if self.isFullScreen():
+                self.showNormal()
+            else:
+                self.showFullScreen()
+        event.accept()
+
     def play(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
+
+    def mouseDoubleClickEvent(self, event):
+        if not self.isFullScreen():
+            self.showFullScreen()
+        else:
+            self.showNormal()
 
     def mediaStateChanged(self, state):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -212,8 +234,11 @@ class VideoWindow(QMainWindow):
 
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
+        # convert to mm:ss:ms
+        time = self.mediaPlayer.position()
+        time = time / 1000
         print(self.mediaPlayer.position())
-        self.currentPlayTimeLabel.setText(str(position))
+        self.currentPlayTimeLabel.setText("{0:.2f}".format(time) + "s")
 
     def durationChanged(self, duration):
         self.positionSlider.setRange(0, duration)
@@ -230,16 +255,25 @@ class VideoWindow(QMainWindow):
         self.log("EXPORTING ... PLEASE WAIT")
         newFilePath = os.path.splitext(self.loadedFile)[0] + ".gif"
 
+
+        time = self.mediaPlayer.position()
+        time = time / 1000
+        # print(self.mediaPlayer.position())
+        self.currentPlayTimeLabel.setText("{0:.2f}".format(time).replace('.', ':') + "s")
+        # print("{0:.2f}".format(time).replace('.', ':') + "s")
+
+
         # Get start and end times
         # startTime = self.startMarkerTime.text()
         # endTime = self.endMarkerTime.text()
-
         clip = (VideoFileClip(self.loadedFile)
                 .subclip((0)) # (start, end)
                 .resize(1.0) # output scaling
                 )
         clip.write_gif(newFilePath, fps=20, fuzz=0, program='ffmpeg')
 
+        # frames = int(clip.fps * clip.duration)
+        # n_frames = clip.reader.nframes # number of frames in video
 
         self.log("saved at " + newFilePath)
         # if self.symmetrizeCheckbox.isChecked():
