@@ -35,14 +35,23 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QLineEdit,
-    QCheckBox
+    QCheckBox,
+    QStatusBar,
         )
 from PyQt5.QtWidgets import QMainWindow,QWidget, QPushButton, QAction
 from PyQt5.QtGui import QIcon
 import sys
 import os
+import subprocess
+
+from moviepy.editor import (
+    VideoFileClip,
+)
 
 class VideoWindow(QMainWindow):
+
+    def log(self, msg):
+        self.statusBar.showMessage(msg)
 
     def enableAllControls(self, flag=True):
         self.startMarkerTime.setEnabled(flag)
@@ -54,6 +63,10 @@ class VideoWindow(QMainWindow):
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
         self.setWindowTitle("InstaGif - Instantly Create GIFs") 
+       
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage("Ready")
 
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface) # https://doc.qt.io/qtforpython-5/PySide2/QtMultimedia/QMediaPlayer.html#qmediaplayer
         self.mediaPlayer.setNotifyInterval(30) # XYms refresh rate (needed for notifs)
@@ -75,10 +88,12 @@ class VideoWindow(QMainWindow):
 
         # Other stuff
         self.startMarkerTime    = QLineEdit(self)
+        self.startMarkerTime.setStatusTip("Start Marker Time")
         self.startMarkerTime.setEnabled(False)
         self.startMarkerTime.setPlaceholderText("mm:ss:ms")
 
         self.endMarkerTime      = QLineEdit(self)
+        self.endMarkerTime.setStatusTip("End Marker Time")
         self.endMarkerTime.setEnabled(False)
         self.endMarkerTime.setPlaceholderText("mm:ss:ms")
 
@@ -86,7 +101,8 @@ class VideoWindow(QMainWindow):
         self.symmetrizeCheckbox.setEnabled(False)
         self.symmetrizeCheckbox.setChecked(False)
 
-        self.convertToGifButton = QPushButton("Save GIF")
+        self.convertToGifButton = QPushButton("Export As GIF")
+        self.convertToGifButton.setStatusTip('Export video as GIF')
         self.convertToGifButton.clicked.connect(self.saveAsGif)
 
         # Create new action
@@ -154,6 +170,7 @@ class VideoWindow(QMainWindow):
                     QMediaContent(QUrl.fromLocalFile(fileName)))
             self.enableAllControls()
             self.mediaPlayer.play()
+            self.loadedFile = fileName # TODO: replace with simple call of currently loaded file on onMediaLoaded
 
     def openTestFile(self):
         # NOTE: dev only
@@ -161,6 +178,8 @@ class VideoWindow(QMainWindow):
                 QMediaContent(QUrl.fromLocalFile("C:\\Users\\STUDIUM\\Videos\\Apex Legends\\CHEATER FOOTAGE\\2.mp4")))
         self.enableAllControls()
         self.mediaPlayer.play()
+        self.loadedFile = "C:\\Users\\STUDIUM\\Videos\\Apex Legends\\CHEATER FOOTAGE\\2.mp4" # TODO: replace with simple call of currently loaded file on onMediaLoaded
+        print(self.loadedFile)
 
     def exitCall(self):
         sys.exit(app.exec_())
@@ -194,7 +213,19 @@ class VideoWindow(QMainWindow):
         self.errorLabel.setText("Error: " + self.mediaPlayer.errorString())
 
     def saveAsGif(self):
-        print("Saving as gif")
+        """Export video as GIF main method"""
+        self.log("Saving as gif")
+        newFilePath = os.path.splitext(self.loadedFile)[0] + ".gif"
+
+        VideoFileClip(filename=self.loadedFile).write_gif(newFilePath, fps=20, program='ffmpeg')
+
+        self.log("saved at " + newFilePath)
+        # if self.symmetrizeCheckbox.isChecked():
+        #     self.statusBar.showMessage("Symmetrizing...")
+
+        newFilePathDirectory = os.path.dirname(newFilePath)
+        subprocess.Popen(f'explorer {newFilePathDirectory}')
+ 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
