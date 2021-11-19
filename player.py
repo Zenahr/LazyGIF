@@ -5,14 +5,21 @@
 
 """ROADMAP
 
-hotkeys for seeking
+hotkeys
 ----------------------------------------------------------------------------------------------------
 arrow   keys        : seek 10   frames  forward or backward
 arrow   keys + shift: seek 100  frames  forward or backward
 arrow   keys + ctrl : seek 1    frame   forward or backward
+ctrl + e : export as gif to source folder
 
 
-
+export functionality
+----------------------------------------------------------------------------------------------------
+symmetrize
+target filesize: use this textfield to make sure file can be exported to Discord, etc. (will try to keep the highest quality and frame rate possible)
+regarding that, have a radio button group to choose between:
+    - prioritize resolution
+    - prioritize frame rate
 """
 
 
@@ -86,6 +93,10 @@ class VideoWindow(QMainWindow):
         self.errorLabel.setSizePolicy(QSizePolicy.Preferred,
                 QSizePolicy.Maximum)
 
+        self.currentPlayTimeLabel = QLabel()
+        self.currentPlayTimeLabel.setText("00:00")
+    
+
         # Other stuff
         self.startMarkerTime    = QLineEdit(self)
         self.startMarkerTime.setStatusTip("Start Marker Time")
@@ -138,6 +149,7 @@ class VideoWindow(QMainWindow):
         controlLayout = QHBoxLayout()
         controlLayout.setContentsMargins(0, 0, 0, 0)
         controlLayout.addWidget(self.playButton)
+        controlLayout.addWidget(self.currentPlayTimeLabel)
         controlLayout.addWidget(self.positionSlider)
 
         layout = QVBoxLayout()
@@ -201,6 +213,7 @@ class VideoWindow(QMainWindow):
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
         print(self.mediaPlayer.position())
+        self.currentPlayTimeLabel.setText(str(position))
 
     def durationChanged(self, duration):
         self.positionSlider.setRange(0, duration)
@@ -214,10 +227,19 @@ class VideoWindow(QMainWindow):
 
     def saveAsGif(self):
         """Export video as GIF main method"""
-        self.log("Saving as gif")
+        self.log("EXPORTING ... PLEASE WAIT")
         newFilePath = os.path.splitext(self.loadedFile)[0] + ".gif"
 
-        VideoFileClip(filename=self.loadedFile).write_gif(newFilePath, fps=20, program='ffmpeg')
+        # Get start and end times
+        # startTime = self.startMarkerTime.text()
+        # endTime = self.endMarkerTime.text()
+
+        clip = (VideoFileClip(self.loadedFile)
+                .subclip((0)) # (start, end)
+                .resize(1.0) # output scaling
+                )
+        clip.write_gif(newFilePath, fps=20, fuzz=0, program='ffmpeg')
+
 
         self.log("saved at " + newFilePath)
         # if self.symmetrizeCheckbox.isChecked():
