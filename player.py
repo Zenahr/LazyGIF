@@ -1,5 +1,10 @@
-# PyQt5 Video player
 #!/usr/bin/env python
+
+# C:\Users\STUDIUM\Videos\Apex Legends\CHEATER FOOTAGE
+
+"""
+InnoSetup: e process of adding custom verbs to a file's shortcut menu is described in the Extending Shortcut Menus and Verbs and File Associations topics. If you prefer a simpler way, you can also just put a shortcut to your EXE in the SendTo folder.
+"""
 
 from PyQt5.QtCore import QDir, Qt, QUrl
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -14,9 +19,10 @@ class VideoWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
-        self.setWindowTitle("PyQt Video Player Widget Example - pythonprogramminglanguage.com") 
+        self.setWindowTitle("InstaGif - Instantly Create GIFs") 
 
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.mediaPlayer.setNotifyInterval(30) # XYms refresh rate (needed for notifs)
 
         videoWidget = QVideoWidget()
 
@@ -77,7 +83,7 @@ class VideoWindow(QMainWindow):
         self.mediaPlayer.error.connect(self.handleError)
 
     def openFile(self):
-        fileName, _ = QFileDialog.getOpenFileName(self, "Open Movie",
+        fileName, _ = QFileDialog.getOpenFileName(self, "Import Video",
                 QDir.homePath())
 
         if fileName != '':
@@ -104,6 +110,7 @@ class VideoWindow(QMainWindow):
 
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
+        print(self.mediaPlayer.position())
 
     def durationChanged(self, duration):
         self.positionSlider.setRange(0, duration)
