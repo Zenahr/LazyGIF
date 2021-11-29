@@ -192,10 +192,10 @@ class VideoWindow(QMainWindow):
     def openTestFile(self):
         # NOTE: dev only
         self.mediaPlayer.setMedia(
-                QMediaContent(QUrl.fromLocalFile("C:\\Users\\STUDIUM\\Videos\\Apex Legends\\CHEATER FOOTAGE\\2.mp4")))
+                QMediaContent(QUrl.fromLocalFile("D:\\VIDEOS\APEX LEGENDS\\CHEATER FOOTAGE\\2.mp4")))
         self.enableAllControls()
         self.mediaPlayer.play()
-        self.loadedFile = "C:\\Users\\STUDIUM\\Videos\\Apex Legends\\CHEATER FOOTAGE\\2.mp4" # TODO: replace with simple call of currently loaded file on onMediaLoaded
+        self.loadedFile = "D:\\VIDEOS\APEX LEGENDS\\CHEATER FOOTAGE\\2.mp4" # TODO: replace with simple call of currently loaded file on onMediaLoaded
         print(self.loadedFile)
 
     def exitCall(self):
@@ -264,10 +264,15 @@ class VideoWindow(QMainWindow):
 
 
         # Get start and end times
-        # startTime = self.startMarkerTime.text()
-        # endTime = self.endMarkerTime.text()
-        clip = (VideoFileClip(self.loadedFile)
-                .subclip((0)) # (start, end)
+        startTime = int(self.startMarkerTime.text())
+        endTime   = int(self.endMarkerTime.text())
+        if self.startMarkerTime.text() == "":
+            startTime = 0
+        if self.endMarkerTime.text() == "":
+            endTime = self.mediaPlayer.duration()
+        print(startTime, endTime)
+        clip      = (VideoFileClip(self.loadedFile)
+                .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
                 .resize(1.0) # output scaling
                 )
         clip.write_gif(newFilePath, fps=20, fuzz=0, program='ffmpeg')
