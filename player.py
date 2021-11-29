@@ -73,6 +73,7 @@ class VideoWindow(QMainWindow):
         self.playButton.setEnabled(flag)
         self.convertToGifButton.setEnabled(flag)
         self.exportResolutionPercentage.setEnabled(flag)
+        self.exportFrameRate.setEnabled(flag)
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
@@ -128,6 +129,12 @@ class VideoWindow(QMainWindow):
         self.exportResolutionPercentage.setPlaceholderText("0.5")
         self.exportResolutionPercentage.setText("0.5")
 
+        self.exportFrameRate    = QLineEdit(self)
+        self.exportFrameRate.setStatusTip("Export Frame Rate (FPS)")
+        self.exportFrameRate.setEnabled(False)
+        self.exportFrameRate.setPlaceholderText("20")
+        self.exportFrameRate.setText("20")
+
 
         self.convertToGifButton = QPushButton("Export As GIF")
         self.convertToGifButton.setStatusTip('Export video as GIF')
@@ -172,15 +179,17 @@ class VideoWindow(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(videoWidget)
         layout.addLayout(controlLayout)
+
         layout.addWidget(self.errorLabel)
         layout.addWidget(self.startMarkerTime)
         layout.addWidget(self.endMarkerTime)
         layout.addWidget(self.symmetrizeCheckbox)
         layout.addWidget(self.exportResolutionPercentage)
+        layout.addWidget(self.exportFrameRate)
+        
+
         layout.addWidget(self.convertToGifButton)
 
-
-        # Set widget to contain window contents
         wid.setLayout(layout)
 
         self.mediaPlayer.setVideoOutput(videoWidget)
@@ -190,6 +199,10 @@ class VideoWindow(QMainWindow):
         self.mediaPlayer.error.connect(self.handleError)
 
         self.enableAllControls(False) # Disable all controls on startup.
+
+
+        self.videoFPS = 0
+
     def openFile(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Import Video",
                 QDir.homePath() + "/Videos",
@@ -201,6 +214,9 @@ class VideoWindow(QMainWindow):
             self.enableAllControls()
             self.mediaPlayer.play()
             self.loadedFile = fileName # TODO: replace with simple call of currently loaded file on onMediaLoaded
+            self.videoFPS   = VideoFileClip(self.loadedFile).fps
+            self.exportFrameRate.setText(str(self.videoFPS))
+
 
     def openTestFile(self):
         # NOTE: dev only
@@ -278,6 +294,9 @@ class VideoWindow(QMainWindow):
 
 
         # Get start and end times
+
+        desiredFPS = int(self.exportFrameRate.value()) if int(self.exportFrameRate.value()) >= 1 or self.exportResolutionPercentage.value() <= self.videoFPS else self.videoFPS
+
         if self.startMarkerTime.text() == "":
             startTime = 0
         else:
@@ -301,7 +320,7 @@ class VideoWindow(QMainWindow):
                     .resize(float(self.exportResolutionPercentage.text())) # output scaling
                     )      
 
-        clip.write_gif(newFilePath, fps=20, fuzz=0, program='ffmpeg')
+        clip.write_gif(newFilePath, fps=desiredFPS, fuzz=0, program='ffmpeg')
 
         # frames = int(clip.fps * clip.duration)
         # n_frames = clip.reader.nframes # number of frames in video
