@@ -17,7 +17,9 @@ ctrl + e : export as gif to source folder
 
 export functionality
 ----------------------------------------------------------------------------------------------------
-symmetrize
+export resolution percentage
+export frame rate
+
 target filesize: use this textfield to make sure file can be exported to Discord, etc. (will try to keep the highest quality and frame rate possible)
 regarding that, have a radio button group to choose between:
     - prioritize resolution
@@ -55,6 +57,8 @@ import subprocess
 
 from moviepy.editor import (
     VideoFileClip,
+    vfx,
+    concatenate
 )
 
 class VideoWindow(QMainWindow):
@@ -68,6 +72,7 @@ class VideoWindow(QMainWindow):
         self.symmetrizeCheckbox.setEnabled(flag)
         self.playButton.setEnabled(flag)
         self.convertToGifButton.setEnabled(flag)
+        self.exportResolutionPercentage.setEnabled(flag)
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
@@ -104,18 +109,25 @@ class VideoWindow(QMainWindow):
 
         # Other stuff
         self.startMarkerTime    = QLineEdit(self)
-        self.startMarkerTime.setStatusTip("Start Marker Time")
+        self.startMarkerTime.setStatusTip("Clip Start Time")
         self.startMarkerTime.setEnabled(False)
         self.startMarkerTime.setPlaceholderText("ss:ms")
 
         self.endMarkerTime      = QLineEdit(self)
-        self.endMarkerTime.setStatusTip("End Marker Time")
+        self.endMarkerTime.setStatusTip("Clip End Time")
         self.endMarkerTime.setEnabled(False)
         self.endMarkerTime.setPlaceholderText("ss:ms")
 
         self.symmetrizeCheckbox = QCheckBox("Symmetrize")
         self.symmetrizeCheckbox.setEnabled(False)
         self.symmetrizeCheckbox.setChecked(False)
+
+        self.exportResolutionPercentage    = QLineEdit(self)
+        self.exportResolutionPercentage.setStatusTip("Export Resolution Percentage (Scaling)")
+        self.exportResolutionPercentage.setEnabled(False)
+        self.exportResolutionPercentage.setPlaceholderText("0.5")
+        self.exportResolutionPercentage.setText("0.5")
+
 
         self.convertToGifButton = QPushButton("Export As GIF")
         self.convertToGifButton.setStatusTip('Export video as GIF')
@@ -164,6 +176,7 @@ class VideoWindow(QMainWindow):
         layout.addWidget(self.startMarkerTime)
         layout.addWidget(self.endMarkerTime)
         layout.addWidget(self.symmetrizeCheckbox)
+        layout.addWidget(self.exportResolutionPercentage)
         layout.addWidget(self.convertToGifButton)
 
 
@@ -217,6 +230,7 @@ class VideoWindow(QMainWindow):
             self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
+        
 
     def mouseDoubleClickEvent(self, event):
         if not self.isFullScreen():
@@ -237,7 +251,7 @@ class VideoWindow(QMainWindow):
         # convert to mm:ss:ms
         time = self.mediaPlayer.position()
         time = time / 1000
-        print(self.mediaPlayer.position())
+        # print(self.mediaPlayer.position())
         self.currentPlayTimeLabel.setText("{0:.2f}".format(time) + "s")
 
     def durationChanged(self, duration):
@@ -264,17 +278,29 @@ class VideoWindow(QMainWindow):
 
 
         # Get start and end times
-        startTime = int(self.startMarkerTime.text())
-        endTime   = int(self.endMarkerTime.text())
         if self.startMarkerTime.text() == "":
             startTime = 0
+        else:
+            startTime = int(self.startMarkerTime.text())
         if self.endMarkerTime.text() == "":
-            endTime = self.mediaPlayer.duration()
+            endTime = self.mediaPlayer.duration() / 1000
+        else:
+            endTime = int(self.endMarkerTime.text())
         print(startTime, endTime)
-        clip      = (VideoFileClip(self.loadedFile)
-                .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
-                .resize(1.0) # output scaling
-                )
+        if (self.symmetrizeCheckbox.isChecked()):
+            def time_symetrize(clip):
+                return concatenate([clip, clip.fx( vfx.time_mirror )])
+            clip = (VideoFileClip(self.loadedFile)
+                    .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
+                    .resize(float(self.exportResolutionPercentage.text())) # output scaling
+                    .fx( time_symetrize ) # mirror clip
+                    )
+        else:
+            clip = (VideoFileClip(self.loadedFile)
+                    .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
+                    .resize(float(self.exportResolutionPercentage.text())) # output scaling
+                    )      
+
         clip.write_gif(newFilePath, fps=20, fuzz=0, program='ffmpeg')
 
         # frames = int(clip.fps * clip.duration)
@@ -287,6 +313,21 @@ class VideoWindow(QMainWindow):
         newFilePathDirectory = os.path.dirname(newFilePath)
         subprocess.Popen(f'explorer {newFilePathDirectory}')
  
+
+# # SYMMETRICE GIF
+# def time_symetrize(clip):
+#     """ Returns the clip played forwards then backwards. In case
+#     you are wondering, vfx (short for Video FX) is loaded by
+#     >>> from moviepy.editor import * """
+#     return concatenate([clip, clip.fx( vfx.time_mirror )])
+
+# clip = (VideoFileClip("frozen_trailer.mp4", audio=False)
+#         .subclip(36.5,36.9)
+#         .resize(0.5)
+#         .crop(x1=189, x2=433)
+#         .fx( time_symetrize ))
+
+# clip.write_gif('sven.gif', fps=15, fuzz=2)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
