@@ -1,3 +1,7 @@
+*.md
+!readme.md
+dependencies
+
 .idea
 __pycache__
 .directory

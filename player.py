@@ -32,7 +32,7 @@ InnoSetup: e process of adding custom verbs to a file's shortcut menu is describ
 """
 
 from PyQt5.QtCore import QDir, Qt, QUrl
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer, QVideoEncoderSettings
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (
     QApplication,
@@ -57,11 +57,71 @@ import sys
 import os
 import subprocess
 
-from moviepy.editor import (
-    VideoFileClip,
-    vfx,
-    concatenate
-)
+
+
+# from moviepy.editor import (
+#     VideoFileClip,
+#     concatenate,
+# )
+
+# from moviepy.video.fx.all import (
+#     time_mirror,
+#     speedx
+# )
+
+# from moviepy.video.fx.time_mirror import time_mirror
+# from moviepy.video.fx.speedx import speedx
+
+
+
+# We got to import all modules manually for PyInstaller to work. Use AUTOPYTOEXE in case the imports have changed since the date of writing this.
+# See: https://github.com/Zulko/moviepy/issues/591#issuecomment-965203931
+
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.VideoClip import ImageClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
+from moviepy.audio.io.AudioFileClip import AudioFileClip
+from moviepy.audio.AudioClip import AudioClip
+from moviepy.editor import concatenate_videoclips,concatenate_audioclips,TextClip,CompositeVideoClip
+from moviepy.video.fx.accel_decel import accel_decel
+from moviepy.video.fx.blackwhite import blackwhite
+from moviepy.video.fx.blink import blink
+from moviepy.video.fx.colorx import colorx
+from moviepy.video.fx.crop import crop
+from moviepy.video.fx.even_size import even_size
+from moviepy.video.fx.fadein import fadein
+from moviepy.video.fx.fadeout import fadeout
+from moviepy.video.fx.freeze import freeze
+from moviepy.video.fx.freeze_region import freeze_region
+from moviepy.video.fx.gamma_corr import gamma_corr
+from moviepy.video.fx.headblur import headblur
+from moviepy.video.fx.invert_colors import invert_colors
+from moviepy.video.fx.loop import loop
+from moviepy.video.fx.lum_contrast import lum_contrast
+from moviepy.video.fx.make_loopable import make_loopable
+from moviepy.video.fx.margin import margin
+from moviepy.video.fx.mask_and import mask_and
+from moviepy.video.fx.mask_color import mask_color
+from moviepy.video.fx.mask_or import mask_or
+from moviepy.video.fx.mirror_x import mirror_x
+from moviepy.video.fx.mirror_y import mirror_y
+from moviepy.video.fx.painting import painting
+from moviepy.video.fx.resize import resize
+from moviepy.video.fx.rotate import rotate
+from moviepy.video.fx.scroll import scroll
+from moviepy.video.fx.speedx import speedx
+from moviepy.video.fx.supersample import supersample
+from moviepy.video.fx.time_mirror import time_mirror
+from moviepy.video.fx.time_symmetrize import time_symmetrize
+
+from moviepy.audio.fx.audio_fadein import audio_fadein
+from moviepy.audio.fx.audio_fadeout import audio_fadeout
+from moviepy.audio.fx.audio_left_right import audio_left_right
+from moviepy.audio.fx.audio_loop import audio_loop
+from moviepy.audio.fx.audio_normalize import audio_normalize
+from moviepy.audio.fx.volumex import volumex
+
+
 
 
 from __info__ import *
@@ -326,21 +386,20 @@ class VideoWindow(QMainWindow):
             endTime = float(self.mediaPlayer.duration() / 1000)
         else:
             endTime = float(self.endMarkerTime.text())
-        print(startTime, endTime)
         if (self.symmetrizeCheckbox.isChecked()):
             def time_symetrize(clip):
-                return concatenate([clip, clip.fx( vfx.time_mirror )])
+                return concatenate([clip, clip.fx( time_mirror )])
             clip = (VideoFileClip(self.loadedFile, audio=False)
                     .subclip(startTime, round(endTime, 1)) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
                     .resize(float(self.exportResolutionPercentage.text())) # output scaling
                     .fx( time_symetrize ) # mirror clip
-                    .fx( vfx.speedx, desiredExportSpeedRate)
+                    .fx( speedx, desiredExportSpeedRate)
                     )
         else:
             clip = (VideoFileClip(self.loadedFile, audio=False)
                     .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
                     .resize(float(self.exportResolutionPercentage.text())) # output scaling
-                    .fx( vfx.speedx, desiredExportSpeedRate)
+                    .fx( speedx, desiredExportSpeedRate)
                     )      
 
         clip.write_gif(newFilePath, fps=desiredFPS, fuzz=0, program='ffmpeg')
