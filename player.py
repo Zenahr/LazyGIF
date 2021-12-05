@@ -48,6 +48,8 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QCheckBox,
     QStatusBar,
+    QMessageBox,
+    QDialog,
         )
 from PyQt5.QtWidgets import QMainWindow,QWidget, QPushButton, QAction
 from PyQt5.QtGui import QIcon
@@ -60,6 +62,9 @@ from moviepy.editor import (
     vfx,
     concatenate
 )
+
+
+from __info__ import *
 
 class VideoWindow(QMainWindow):
 
@@ -74,12 +79,13 @@ class VideoWindow(QMainWindow):
         self.convertToGifButton.setEnabled(flag)
         self.exportResolutionPercentage.setEnabled(flag)
         self.exportFrameRate.setEnabled(flag)
+        self.exportSpeedRate.setEnabled(flag)
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
-        self.setWindowTitle("InstaGif - Instantly Create GIFs") 
+        self.setWindowTitle(APP_TITLE) 
         # self.setWindowIcon(QIcon("icon.png"))
-        self.setWindowFlags(Qt.WindowStaysOnTopHint) # dev only
+        # self.setWindowFlags(Qt.WindowStaysOnTopHint) # dev only
         self.setMinimumSize(640, 280)
 
         self.statusBar = QStatusBar()
@@ -127,7 +133,7 @@ class VideoWindow(QMainWindow):
         self.exportResolutionPercentage.setStatusTip("Export Resolution Percentage (Scaling)")
         self.exportResolutionPercentage.setEnabled(False)
         self.exportResolutionPercentage.setPlaceholderText("0.5")
-        self.exportResolutionPercentage.setText("0.5")
+        self.exportResolutionPercentage.setText("0.3")
 
         self.exportFrameRate    = QLineEdit(self)
         self.exportFrameRate.setStatusTip("Export Frame Rate (FPS)")
@@ -135,13 +141,22 @@ class VideoWindow(QMainWindow):
         self.exportFrameRate.setPlaceholderText("20")
         self.exportFrameRate.setText("20")
 
+        self.exportSpeedRate    = QLineEdit(self)
+        self.exportSpeedRate.setStatusTip("Export Speed Rate")
+        self.exportSpeedRate.setEnabled(False)
+        self.exportSpeedRate.setPlaceholderText("1")
+        self.exportSpeedRate.setText("1")
 
         self.convertToGifButton = QPushButton("Export As GIF")
         self.convertToGifButton.setStatusTip('Export video as GIF')
         self.convertToGifButton.clicked.connect(self.saveAsGif)
 
+        self.appVersionLabel = QLabel()
+        self.appVersionLabel.setText(APP_VERSION)
+        self.appVersionLabel.setAlignment(Qt.AlignCenter)
+
         # Create new action
-        openAction = QAction(QIcon('open.png'), '&Open Video', self)        
+        openAction = QAction(QIcon('open.png'), '&Import Video', self)        
         openAction.setShortcut('Ctrl+O')
         openAction.setStatusTip('')
         openAction.triggered.connect(self.openFile)
@@ -163,7 +178,7 @@ class VideoWindow(QMainWindow):
         fileMenu = menuBar.addMenu('&Actions')
         fileMenu.addAction(openAction)
         fileMenu.addAction(exitAction)
-        fileMenu.addAction(devFileAction)
+        # fileMenu.addAction(devFileAction)
 
         # Create a widget for window contents
         wid = QWidget(self)
@@ -186,9 +201,12 @@ class VideoWindow(QMainWindow):
         layout.addWidget(self.symmetrizeCheckbox)
         layout.addWidget(self.exportResolutionPercentage)
         layout.addWidget(self.exportFrameRate)
+        layout.addWidget(self.exportSpeedRate)
         
 
         layout.addWidget(self.convertToGifButton)
+
+        # layout.addWidget(self.appVersionLabel)
 
         wid.setLayout(layout)
 
@@ -215,8 +233,7 @@ class VideoWindow(QMainWindow):
             self.mediaPlayer.play()
             self.loadedFile = fileName # TODO: replace with simple call of currently loaded file on onMediaLoaded
             self.videoFPS   = VideoFileClip(self.loadedFile).fps
-            self.exportFrameRate.setText(str(self.videoFPS))
-
+            # self.exportFrameRate.setText(str(self.videoFPS)) # initially set the export frame rate to the source video fps
 
     def openTestFile(self):
         # NOTE: dev only
@@ -239,6 +256,9 @@ class VideoWindow(QMainWindow):
                 self.showNormal()
             else:
                 self.showFullScreen()
+        if event.key() == Qt.Key_Space:
+            self.play()
+            event.accept()
         event.accept()
 
     def play(self):
@@ -294,30 +314,33 @@ class VideoWindow(QMainWindow):
 
 
         # Get start and end times
-
-        desiredFPS = int(self.exportFrameRate.value()) if int(self.exportFrameRate.value()) >= 1 or self.exportResolutionPercentage.value() <= self.videoFPS else self.videoFPS
+        exportFrameRate        = float(self.exportFrameRate.text())
+        desiredFPS             = exportFrameRate if exportFrameRate >= 1 or exportFrameRate <= self.videoFPS else self.videoFPS
+        desiredExportSpeedRate = 1.0 if float(self.exportSpeedRate.text()) == "" or float(self.exportSpeedRate.text()) <= 0 else float(self.exportSpeedRate.text())
 
         if self.startMarkerTime.text() == "":
             startTime = 0
         else:
-            startTime = int(self.startMarkerTime.text())
+            startTime = float(self.startMarkerTime.text())
         if self.endMarkerTime.text() == "":
-            endTime = self.mediaPlayer.duration() / 1000
+            endTime = float(self.mediaPlayer.duration() / 1000)
         else:
-            endTime = int(self.endMarkerTime.text())
+            endTime = float(self.endMarkerTime.text())
         print(startTime, endTime)
         if (self.symmetrizeCheckbox.isChecked()):
             def time_symetrize(clip):
                 return concatenate([clip, clip.fx( vfx.time_mirror )])
-            clip = (VideoFileClip(self.loadedFile)
-                    .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
+            clip = (VideoFileClip(self.loadedFile, audio=False)
+                    .subclip(startTime, round(endTime, 1)) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
                     .resize(float(self.exportResolutionPercentage.text())) # output scaling
                     .fx( time_symetrize ) # mirror clip
+                    .fx( vfx.speedx, desiredExportSpeedRate)
                     )
         else:
-            clip = (VideoFileClip(self.loadedFile)
+            clip = (VideoFileClip(self.loadedFile, audio=False)
                     .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
                     .resize(float(self.exportResolutionPercentage.text())) # output scaling
+                    .fx( vfx.speedx, desiredExportSpeedRate)
                     )      
 
         clip.write_gif(newFilePath, fps=desiredFPS, fuzz=0, program='ffmpeg')
@@ -330,23 +353,43 @@ class VideoWindow(QMainWindow):
         #     self.statusBar.showMessage("Symmetrizing...")
 
         newFilePathDirectory = os.path.dirname(newFilePath)
-        subprocess.Popen(f'explorer {newFilePathDirectory}')
- 
+        # subprocess.Popen(f'explorer {newFilePathDirectory}') # TODO: currently not working: redirects to documents folder instead.
 
-# # SYMMETRICE GIF
-# def time_symetrize(clip):
-#     """ Returns the clip played forwards then backwards. In case
-#     you are wondering, vfx (short for Video FX) is loaded by
-#     >>> from moviepy.editor import * """
-#     return concatenate([clip, clip.fx( vfx.time_mirror )])
+        newWindow = QDialog()
+        newWindow.setWindowTitle("EXPORTED GIF")
 
-# clip = (VideoFileClip("frozen_trailer.mp4", audio=False)
-#         .subclip(36.5,36.9)
-#         .resize(0.5)
-#         .crop(x1=189, x2=433)
-#         .fx( time_symetrize ))
+        # add description label
+        # descriptionLabel = QLabel(newWindow)
+        # descriptionLabel.setText(f'Video saved at {newFilePathDirectory}')
+        # descriptionLabel.setAlignment(Qt.AlignCenter)
+        # make label selectable
+        # descriptionLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-# clip.write_gif('sven.gif', fps=15, fuzz=2)
+        def copyPathToClipboard(path):
+            cb = QApplication.instance().clipboard()
+            cb.clear(mode=cb.Clipboard )
+            cb.setText(path, mode=cb.Clipboard)
+
+        # add button to copy path to clipboard
+        copyPathButton = QPushButton(newWindow)
+        copyPathButton.setText("Copy path to clipboard")
+        copyPathButton.clicked.connect(lambda: copyPathToClipboard(newFilePathDirectory))
+
+
+        # descriptionLabel.setStyleSheet("font-size: 20px;")
+        # descriptionLabel.setGeometry(QRect(0, 0, 400, 50))
+        # newWindow.setWindowFlags(Qt.WindowStaysOnTopHint)
+        newWindow.setFixedSize(400, 200)
+        # newWindow.setStyleSheet("background-color: #1a1a1a;")
+        newWindow.setWindowModality(Qt.ApplicationModal)
+        # newWindow.setAttribute(Qt.WA_DeleteOnClose)
+        newWindow.exec_()
+
+        # msgbox = QMessageBox()
+        # msgbox.setWindowTitle('Done Exporting!')
+        # msgbox.setText(f'Video saved at {newFilePathDirectory}')
+        # msgbox.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        # msgbox.exec_()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
