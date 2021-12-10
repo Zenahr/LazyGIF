@@ -1,6 +1,7 @@
 pyinstaller ^
+LazyGIF.py ^
 --name=LazyGIF ^
---onefile player.py ^
+--onefile ^
 --icon=icon.ico ^
 --add-data "icon.png;/." ^
 --hidden-import=pyqt5 ^

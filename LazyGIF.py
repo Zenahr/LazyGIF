@@ -57,22 +57,11 @@ import sys
 import os
 import subprocess
 
+import moviepy.config as mpy_conf
 
-
-# from moviepy.editor import (
-#     VideoFileClip,
-#     concatenate,
-# )
-
-# from moviepy.video.fx.all import (
-#     time_mirror,
-#     speedx
-# )
-
-# from moviepy.video.fx.time_mirror import time_mirror
-# from moviepy.video.fx.speedx import speedx
-
-
+# mpy_conf.FFMPEG_BINARY = r'path\to\ffmpeg.exe'
+# mpy_conf.FFMPEG_BINARY = r'C:\ffmpeg\bin\ffmpeg.exe'
+# mpy_conf.FFMPEG_BINARY = r'ffmeg\bin\ffmpeg.exe' # Remove the need to manually set the path to ffmpeg.exe for end users.
 
 # We got to import all modules manually for PyInstaller to work. Use AUTOPYTOEXE in case the imports have changed since the date of writing this.
 # See: https://github.com/Zulko/moviepy/issues/591#issuecomment-965203931
@@ -363,7 +352,11 @@ class VideoWindow(QMainWindow):
     def saveAsGif(self):
         """Export video as GIF main method"""
         self.log("EXPORTING ... PLEASE WAIT")
-        newFilePath = os.path.splitext(self.loadedFile)[0] + ".gif"
+        if ('.gif' in self.loadedFile):
+            newFilePath = os.path.splitext(self.loadedFile)[0] + "_lazyGIF.gif"
+      
+        else:
+            newFilePath = os.path.splitext(self.loadedFile)[0] + ".gif"
 
 
         time = self.mediaPlayer.position()
