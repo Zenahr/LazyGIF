@@ -111,7 +111,10 @@ from moviepy.audio.fx.audio_normalize import audio_normalize
 from moviepy.audio.fx.volumex import volumex
 
 
-
+# Windows app icon fix (taskbar and taskbar manager)
+import ctypes
+myappid = u'mycompany.myproduct.subproduct.version' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 from __info__ import *
 
@@ -133,7 +136,7 @@ class VideoWindow(QMainWindow):
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
         self.setWindowTitle(APP_TITLE) 
-        # self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowIcon(QIcon("icon-dark.png"))
         # self.setWindowFlags(Qt.WindowStaysOnTopHint) # dev only
         self.setMinimumSize(640, 280)
 

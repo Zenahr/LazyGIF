@@ -4,6 +4,6 @@ LazyGIF.py ^
 --hidden-import=pyqt5 ^
 --icon=icon.ico ^
 --noconsole ^
---add-data "icon.png;/." ^
+--add-data "icon-dark.png;/." ^
 --hidden-import=moviepy ^
 --clean ^
