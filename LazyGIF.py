@@ -135,6 +135,7 @@ class VideoWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
+        self.setAcceptDrops(True)
         self.setWindowTitle(APP_TITLE) 
         self.setWindowIcon(QIcon("icon-dark.png"))
         # self.setWindowFlags(Qt.WindowStaysOnTopHint) # dev only
@@ -273,6 +274,30 @@ class VideoWindow(QMainWindow):
 
         self.videoFPS = 0
 
+    def dragEnterEvent(self, event):
+            event.accept()
+
+    def dragMoveEvent(self, event):
+            event.accept()
+
+    def dropEvent(self, event):
+        # get the file path of event
+        filePath = event.mimeData().urls()[0].toLocalFile()
+        print(filePath)
+
+
+        # check if file is a video
+        if filePath.endswith('.mp4', '.avi', '.mkv', '.mov', '.m4v', '.mpg', '.mpeg', '.wmv', '.flv', '.3gp', '.3g2'):
+            # set the video path
+            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filePath)))
+            self.mediaPlayer.setMedia(
+                    QMediaContent(QUrl.fromLocalFile(filePath)))
+            self.enableAllControls()
+            self.mediaPlayer.play()
+            self.loadedFile = filePath # TODO: replace with simple call of currently loaded file on onMediaLoaded
+            self.videoFPS   = VideoFileClip(self.loadedFile).fps
+        event.accept()
+
     def openFile(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Import Video",
                 QDir.homePath() + "/Videos",
@@ -319,7 +344,6 @@ class VideoWindow(QMainWindow):
         else:
             self.mediaPlayer.play()
         
-
     def mouseDoubleClickEvent(self, event):
         if not self.isFullScreen():
             self.showFullScreen()
