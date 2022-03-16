@@ -1,6 +1,6 @@
 pyinstaller ^
-LazyGIF.py ^
---name=LazyGIF ^
+LazyCUT.py ^
+--name=LazyCUT ^
 --onefile ^
 --icon=icon.ico ^
 --add-data "icon-dark.png;." ^

@@ -56,6 +56,8 @@ from PyQt5.QtGui import QIcon
 import sys
 import os
 import subprocess
+from uuid import uuid1
+from random import randint
 
 import moviepy.config as mpy_conf
 
@@ -66,49 +68,7 @@ import moviepy.config as mpy_conf
 # We got to import all modules manually for PyInstaller to work. Use AUTOPYTOEXE in case the imports have changed since the date of writing this.
 # See: https://github.com/Zulko/moviepy/issues/591#issuecomment-965203931
 
-from moviepy.video.io.VideoFileClip import VideoFileClip
-from moviepy.video.VideoClip import ImageClip
-from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
-from moviepy.audio.io.AudioFileClip import AudioFileClip
-from moviepy.audio.AudioClip import AudioClip
-from moviepy.editor import concatenate_videoclips,concatenate_audioclips,TextClip,CompositeVideoClip
-from moviepy.video.fx.accel_decel import accel_decel
-from moviepy.video.fx.blackwhite import blackwhite
-from moviepy.video.fx.blink import blink
-from moviepy.video.fx.colorx import colorx
-from moviepy.video.fx.crop import crop
-from moviepy.video.fx.even_size import even_size
-from moviepy.video.fx.fadein import fadein
-from moviepy.video.fx.fadeout import fadeout
-from moviepy.video.fx.freeze import freeze
-from moviepy.video.fx.freeze_region import freeze_region
-from moviepy.video.fx.gamma_corr import gamma_corr
-from moviepy.video.fx.headblur import headblur
-from moviepy.video.fx.invert_colors import invert_colors
-from moviepy.video.fx.loop import loop
-from moviepy.video.fx.lum_contrast import lum_contrast
-from moviepy.video.fx.make_loopable import make_loopable
-from moviepy.video.fx.margin import margin
-from moviepy.video.fx.mask_and import mask_and
-from moviepy.video.fx.mask_color import mask_color
-from moviepy.video.fx.mask_or import mask_or
-from moviepy.video.fx.mirror_x import mirror_x
-from moviepy.video.fx.mirror_y import mirror_y
-from moviepy.video.fx.painting import painting
-from moviepy.video.fx.resize import resize
-from moviepy.video.fx.rotate import rotate
-from moviepy.video.fx.scroll import scroll
-from moviepy.video.fx.speedx import speedx
-from moviepy.video.fx.supersample import supersample
-from moviepy.video.fx.time_mirror import time_mirror
-from moviepy.video.fx.time_symmetrize import time_symmetrize
-
-from moviepy.audio.fx.audio_fadein import audio_fadein
-from moviepy.audio.fx.audio_fadeout import audio_fadeout
-from moviepy.audio.fx.audio_left_right import audio_left_right
-from moviepy.audio.fx.audio_loop import audio_loop
-from moviepy.audio.fx.audio_normalize import audio_normalize
-from moviepy.audio.fx.volumex import volumex
+from importhelper import *
 
 
 # Windows app icon fix (taskbar and taskbar manager)
@@ -132,6 +92,31 @@ class VideoWindow(QMainWindow):
         self.exportResolutionPercentage.setEnabled(flag)
         self.exportFrameRate.setEnabled(flag)
         self.exportSpeedRate.setEnabled(flag)
+        self.startSlider.setEnabled(flag)
+        self.endSlider.setEnabled(flag)
+
+    def updateStartSlider(self):
+        if self.startSlider.value() > self.endSlider.value():
+            self.endSlider.setValue(self.startSlider.value())
+        self.setPosition(self.startSlider.value())
+        self.mediaPlayer.play()
+            
+    def updateEndSlider(self):
+        if self.endSlider.value() < self.startSlider.value():
+            self.startSlider.setValue(self.endSlider.value())
+        if self.mediaPlayer.position() > self.endSlider.value():
+            self.mediaPlayer.setPosition(self.endSlider.value())
+            self.positionSlider.setValue(self.endSlider.value())
+        self.mediaPlayer.play()
+
+    def updateVolume(self):
+        self.mediaPlayer.setVolume(self.volumeSlider.value())
+
+    def mouseReleaseEvent(self, event):
+        print("Mouse Release Event")
+        # if element was startSlider, do something
+        if self.startSlider.underMouse():
+            self.setPosition(self.startSlider.value())
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
@@ -147,7 +132,25 @@ class VideoWindow(QMainWindow):
 
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface) # https://doc.qt.io/qtforpython-5/PySide2/QtMultimedia/QMediaPlayer.html#qmediaplayer
         self.mediaPlayer.setNotifyInterval(30) # XYms refresh rate (needed for notifs)
-        self.mediaPlayer.setMuted(True) # mute the video
+        self.mediaPlayer.setMuted(False) # mute the video
+        self.mediaPlayer.setVolume(50) # set volume to 50%
+
+
+        # add label for volume slider
+        self.volumeLabel = QLabel()
+        self.volumeLabel.setText("Volume")
+        self.volumeLabel.setAlignment(Qt.AlignCenter)
+
+        # add slider for audio volume
+        self.volumeSlider = QSlider(Qt.Horizontal)
+        self.volumeSlider.setRange(0, 100)
+        self.volumeSlider.setValue(50)
+        self.volumeSlider.setTickPosition(QSlider.TicksBothSides)
+        self.volumeSlider.setTickInterval(10)
+        self.volumeSlider.setSingleStep(1)
+
+
+        self.volumeSlider.valueChanged.connect(self.updateVolume)
 
         videoWidget = QVideoWidget()
 
@@ -185,14 +188,14 @@ class VideoWindow(QMainWindow):
         self.exportResolutionPercentage    = QLineEdit(self)
         self.exportResolutionPercentage.setStatusTip("Export Resolution Percentage (Scaling)")
         self.exportResolutionPercentage.setEnabled(False)
-        self.exportResolutionPercentage.setPlaceholderText("0.5")
-        self.exportResolutionPercentage.setText("0.3")
+        self.exportResolutionPercentage.setPlaceholderText("1")
+        self.exportResolutionPercentage.setText("1")
 
         self.exportFrameRate    = QLineEdit(self)
         self.exportFrameRate.setStatusTip("Export Frame Rate (FPS)")
         self.exportFrameRate.setEnabled(False)
-        self.exportFrameRate.setPlaceholderText("20")
-        self.exportFrameRate.setText("20")
+        self.exportFrameRate.setPlaceholderText("60")
+        self.exportFrameRate.setText("60")
 
         self.exportSpeedRate    = QLineEdit(self)
         self.exportSpeedRate.setStatusTip("Export Speed Rate")
@@ -237,6 +240,23 @@ class VideoWindow(QMainWindow):
         wid = QWidget(self)
         self.setCentralWidget(wid)
 
+        self.startSlider = QSlider(Qt.Horizontal, self)
+        self.startSlider.setRange(0, 100)
+        self.startSlider.setFocusPolicy(Qt.NoFocus)
+        self.startSlider.setPageStep(5)
+
+        self.endSlider = QSlider(Qt.Horizontal, self)
+        self.endSlider.setRange(0, 100)
+        self.endSlider.setValue(100)
+        self.endSlider.setFocusPolicy(Qt.NoFocus)
+        self.endSlider.setPageStep(5)
+
+
+
+        self.startSlider.valueChanged.connect(self.updateStartSlider)
+        self.endSlider.valueChanged.connect(self.updateEndSlider)
+
+
         # Create layouts to place inside widget
         controlLayout = QHBoxLayout()
         controlLayout.setContentsMargins(0, 0, 0, 0)
@@ -247,15 +267,18 @@ class VideoWindow(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(videoWidget)
         layout.addLayout(controlLayout)
-
+        layout.addWidget(self.startSlider)
+        layout.addWidget(self.endSlider)
         layout.addWidget(self.errorLabel)
-        layout.addWidget(self.startMarkerTime)
-        layout.addWidget(self.endMarkerTime)
-        layout.addWidget(self.symmetrizeCheckbox)
         layout.addWidget(self.exportResolutionPercentage)
         layout.addWidget(self.exportFrameRate)
-        layout.addWidget(self.exportSpeedRate)
-        
+
+        # add volume slider
+        volumeSliderLayout = QHBoxLayout()
+        volumeSliderLayout.addWidget(self.volumeLabel)
+        volumeSliderLayout.addWidget(self.volumeSlider)
+
+        layout.addLayout(volumeSliderLayout)
 
         layout.addWidget(self.convertToGifButton)
 
@@ -287,7 +310,7 @@ class VideoWindow(QMainWindow):
 
 
         # check if file is a video
-        if filePath.endswith('.mp4', '.avi', '.mkv', '.mov', '.m4v', '.mpg', '.mpeg', '.wmv', '.flv', '.3gp', '.3g2'):
+        if filePath.endswith(('.mp4', '.avi', '.mkv', '.mov', '.m4v', '.mpg', '.mpeg', '.wmv', '.flv', '.3gp', '.3g2')):
             # set the video path
             self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filePath)))
             self.mediaPlayer.setMedia(
@@ -359,7 +382,36 @@ class VideoWindow(QMainWindow):
                     self.style().standardIcon(QStyle.SP_MediaPlay))
 
     def positionChanged(self, position):
-        self.positionSlider.setValue(position)
+        if position > self.endSlider.value():
+            self.positionSlider.setValue(self.endSlider.value())
+            self.mediaPlayer.setPosition(self.endSlider.value())
+            
+            # seek to startSlider and play video
+            self.mediaPlayer.setPosition(self.startSlider.value())
+            self.mediaPlayer.play()
+
+        elif position < self.startSlider.value():
+            self.positionSlider.setValue(self.startSlider.value())
+            self.mediaPlayer.setPosition(self.startSlider.value())
+            self.mediaPlayer.pause()
+        else:
+            self.positionSlider.setValue(position)
+
+        # restart when reaching end.
+        if position == self.endSlider.value():
+            self.mediaPlayer.setPosition(self.startSlider.value())
+            self.positionSlider.setValue(self.startSlider.value())
+            self.mediaPlayer.play()
+
+        
+        # check endofvideo has been reached. If so, restart playback.
+        if position == self.mediaPlayer.duration():
+            self.mediaPlayer.setPosition(0)
+            self.positionSlider.setValue(0)
+            self.mediaPlayer.play()
+        
+
+        
         # convert to mm:ss:ms
         time = self.mediaPlayer.position()
         time = time / 1000
@@ -367,7 +419,18 @@ class VideoWindow(QMainWindow):
         self.currentPlayTimeLabel.setText("{0:.2f}".format(time) + "s")
 
     def durationChanged(self, duration):
-        self.positionSlider.setRange(0, duration)
+        def initializeSliders():
+            # Initialize sliders
+            self.totalFrames = VideoFileClip(self.loadedFile).reader.nframes
+
+            self.positionSlider.setRange(0, duration)
+            self.startSlider.setRange(0, duration)
+            self.endSlider.setRange(0, duration)
+            self.startSlider.setValue(0)
+            self.endSlider.setValue(duration)
+        initializeSliders()
+        # set the export frame rate to the source video fps
+        self.exportFrameRate.setText(str(self.videoFPS))
 
     def setPosition(self, position):
         self.mediaPlayer.setPosition(position)
@@ -380,49 +443,28 @@ class VideoWindow(QMainWindow):
         """Export video as GIF main method"""
         self.log("EXPORTING ... PLEASE WAIT")
         if ('.gif' in self.loadedFile):
-            newFilePath = os.path.splitext(self.loadedFile)[0] + "_lazyGIF.gif"
+            newFilePath = os.path.splitext(self.loadedFile)[0] + "_LazyCUT.mp4"
       
         else:
-            newFilePath = os.path.splitext(self.loadedFile)[0] + ".gif"
-
-
+            newFilePath = os.path.splitext(self.loadedFile)[0] + "-CUT-" + str(randint(111111, 999999)) + ".mp4"
         time = self.mediaPlayer.position()
         time = time / 1000
         # print(self.mediaPlayer.position())
         self.currentPlayTimeLabel.setText("{0:.2f}".format(time).replace('.', ':') + "s")
         # print("{0:.2f}".format(time).replace('.', ':') + "s")
-
-
         # Get start and end times
         exportFrameRate        = float(self.exportFrameRate.text())
         desiredFPS             = exportFrameRate if exportFrameRate >= 1 or exportFrameRate <= self.videoFPS else self.videoFPS
         desiredExportSpeedRate = 1.0 if float(self.exportSpeedRate.text()) == "" or float(self.exportSpeedRate.text()) <= 0 else float(self.exportSpeedRate.text())
 
-        if self.startMarkerTime.text() == "":
-            startTime = 0
-        else:
-            startTime = float(self.startMarkerTime.text())
-        if self.endMarkerTime.text() == "":
-            endTime = float(self.mediaPlayer.duration() / 1000)
-        else:
-            endTime = float(self.endMarkerTime.text())
-        if (self.symmetrizeCheckbox.isChecked()):
-            def time_symetrize(clip):
-                return concatenate([clip, clip.fx( time_mirror )])
-            clip = (VideoFileClip(self.loadedFile, audio=False)
-                    .subclip(startTime, round(endTime, 1)) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
-                    .resize(float(self.exportResolutionPercentage.text())) # output scaling
-                    .fx( time_symetrize ) # mirror clip
-                    .fx( speedx, desiredExportSpeedRate)
-                    )
-        else:
-            clip = (VideoFileClip(self.loadedFile, audio=False)
-                    .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
-                    .resize(float(self.exportResolutionPercentage.text())) # output scaling
-                    .fx( speedx, desiredExportSpeedRate)
-                    )      
-
-        clip.write_gif(newFilePath, fps=desiredFPS, fuzz=0, program='ffmpeg')
+        startTime = self.startSlider.value() / 1000
+        endTime = self.endSlider.value() / 1000
+        clip = (VideoFileClip(self.loadedFile, audio=True)
+                .subclip(startTime, endTime) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
+                .resize(float(self.exportResolutionPercentage.text())) # output scaling
+                .fx( speedx, desiredExportSpeedRate)
+                )      
+        clip.write_videofile(newFilePath, fps=desiredFPS, preset='medium', remove_temp=True)
 
         # frames = int(clip.fps * clip.duration)
         # n_frames = clip.reader.nframes # number of frames in video

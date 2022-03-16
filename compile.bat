@@ -1,6 +1,6 @@
 pyinstaller ^
-LazyGIF.py ^
---name=LazyGIF ^
+LazyCUT.py ^
+--name=LazyCUT ^
 --hidden-import=pyqt5 ^
 --icon=icon.ico ^
 --noconsole ^

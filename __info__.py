@@ -1,5 +1,5 @@
 APP_VERSION='0.1.0-beta'
-APP_TITLE = 'LazyGIF - The GIF maker for the lazy ones'
+APP_TITLE = 'LazyCUT - The lightweight video cutter for the lazy ones'
 APP_AUTHOR=''
 APP_AUTHOR_EMAIL=''
 APP_LICENSE=''

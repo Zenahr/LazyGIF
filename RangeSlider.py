@@ -17,7 +17,7 @@ class RangeSlider(QWidget):
         self.opt.maximum = 10
 
         self.setTickPosition(QSlider.TicksAbove)
-        self.setTickInterval(1)
+        self.setTickInterval(10)
 
         self.setSizePolicy(
             QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed, QSizePolicy.Slider)
