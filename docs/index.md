@@ -1,12 +1,13 @@
 # LazyGIF
 
+LazyGIF is a free, open-source, lightweight video editor for Windows. Say yes to your laziness and no to bloated software with 1000 features you don't need.
+
 ## Demo
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/i_g6h88RQ6s" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-![](static/screenshot1.png)
+<!-- ![](static/screenshot1.png) -->
 
-LazyGIF is a free, open-source, lightweight video editor for Windows. Say yes to your laziness and no to bloated software with 1000 features you don't need.
 
 ## Guides
 
