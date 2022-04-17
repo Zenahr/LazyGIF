@@ -1,2 +1,2 @@
 Discord
-dm 8mb
+dm 10mb
