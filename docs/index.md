@@ -36,10 +36,10 @@ The app automatically opens the folder the videos are saved at.
 
 _(Coming soon)_
 
-## Hotkeys/shortcuts
+<!-- ## Hotkeys/shortcuts
 
 Import video: <kbd>CTRL</kbd>+<kbd>O</kbd>
-Quit: <kbd>CTRL</kbd>+<kbd>Q</kbd>
+Quit: <kbd>CTRL</kbd>+<kbd>Q</kbd> -->
 
 ## Features
 
