@@ -66,3 +66,7 @@ Quit: <kbd>CTRL</kbd>+<kbd>Q</kbd> -->
 ## Support or Contact
 
 Feel free to create an issue on the GitHub project page or to contact me [via Reddit](https://www.reddit.com/user/Zenahr).
+
+## Antivirus scan
+
+ZIP is scanned via hybrid-analysis.com. See the report [here](https://www.hybrid-analysis.com/sample/451ee2eebdd9b49f07bb3df7b29b2bfa3cde8d93711be6f28f6ec9d4afa1f735).
