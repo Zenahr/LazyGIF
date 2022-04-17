@@ -10,7 +10,7 @@ LazyGIF is a free, open-source, lightweight video editor for Windows. Say yes to
 
 1. (Maybe optional) Install the prerequisites: 
    - [LAV Splitters](https://github.com/Nevcairiel/LAVFilters/releases/download/0.75.1/LAVFilters-0.75.1-Installer.exe)
-2. Download the ZIP for Windows here: 
+2. Download the ZIP for Windows [here](static/LazyGIF.zip)
 3. Extract the ZIP somewhere on your computer
 4. Open `LazyGIF` in the extracted folder
 
