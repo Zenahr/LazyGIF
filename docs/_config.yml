@@ -1,8 +1,8 @@
 theme: jekyll-theme-minimal
 title: LazyGIF
 description: ''
-logo: /static/icon-dark.png
+logo: static/icon-dark.png
 show_downloads: true
-google_analytics: 'G-4QYPP10VXP'
+google_analytics: G-4QYPP10VXP
 github:
   zip_url: https://zenahr.com/FILES/LazyGIF.zip
