@@ -1,6 +1,6 @@
 # LazyGIF
 
-
+![](static/screenshot1.png)
 
 LazyGIF is a free, open-source, lightweight video editor for Windows. Say yes to your laziness and no to bloated software with 1000 features you don't need.
 
