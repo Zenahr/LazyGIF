@@ -204,10 +204,10 @@ class VideoWindow(QMainWindow):
         devFileAction.triggered.connect(self.openTestFile)
 
         # Create menu bar and add action
-        menuBar = self.menuBar()
-        fileMenu = menuBar.addMenu('&Actions')
-        fileMenu.addAction(openAction)
-        fileMenu.addAction(exitAction)
+        # menuBar = self.menuBar()
+        # fileMenu = menuBar.addMenu('&Actions')
+        # fileMenu.addAction(openAction)
+        # fileMenu.addAction(exitAction)
         # fileMenu.addAction(devFileAction)
 
         # Create a widget for window contents
@@ -417,7 +417,7 @@ class VideoWindow(QMainWindow):
             endTime = float(self.endMarkerTime.text())
         if (self.symmetrizeCheckbox.isChecked()):
             def time_symetrize(clip):
-                return concatenate([clip, clip.fx( time_mirror )])
+                return concatenate_videoclips([clip, clip.fx( time_mirror )])
             clip = (VideoFileClip(self.loadedFile, audio=False)
                     .subclip(startTime, round(endTime, 1)) # (start, end) # https://zulko.github.io/moviepy/ref/Clip.html?highlight=subclip#moviepy.Clip.Clip.subclip
                     .resize(float(self.exportResolutionPercentage.text())) # output scaling
@@ -462,19 +462,19 @@ class VideoWindow(QMainWindow):
             cb.setText(path, mode=cb.Clipboard)
 
         # add button to copy path to clipboard
-        copyPathButton = QPushButton(newWindow)
-        copyPathButton.setText("Copy path to clipboard")
-        copyPathButton.clicked.connect(lambda: copyPathToClipboard(newFilePathDirectory))
+        # copyPathButton = QPushButton(newWindow)
+        # copyPathButton.setText("Copy path to clipboard")
+        # copyPathButton.clicked.connect(lambda: copyPathToClipboard(newFilePathDirectory))
 
 
         # descriptionLabel.setStyleSheet("font-size: 20px;")
         # descriptionLabel.setGeometry(QRect(0, 0, 400, 50))
         # newWindow.setWindowFlags(Qt.WindowStaysOnTopHint)
-        newWindow.setFixedSize(400, 200)
+        # newWindow.setFixedSize(400, 200)
         # newWindow.setStyleSheet("background-color: #1a1a1a;")
-        newWindow.setWindowModality(Qt.ApplicationModal)
+        # newWindow.setWindowModality(Qt.ApplicationModal)
         # newWindow.setAttribute(Qt.WA_DeleteOnClose)
-        newWindow.exec_()
+        # newWindow.exec_()
 
         # msgbox = QMessageBox()
         # msgbox.setWindowTitle('Done Exporting!')
