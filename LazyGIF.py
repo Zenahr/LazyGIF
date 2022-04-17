@@ -50,6 +50,7 @@ from PyQt5.QtWidgets import (
     QStatusBar,
     QMessageBox,
     QDialog,
+    QTextEdit,
         )
 from PyQt5.QtWidgets import QMainWindow,QWidget, QPushButton, QAction
 from PyQt5.QtGui import QIcon
@@ -66,49 +67,7 @@ import moviepy.config as mpy_conf
 # We got to import all modules manually for PyInstaller to work. Use AUTOPYTOEXE in case the imports have changed since the date of writing this.
 # See: https://github.com/Zulko/moviepy/issues/591#issuecomment-965203931
 
-from moviepy.video.io.VideoFileClip import VideoFileClip
-from moviepy.video.VideoClip import ImageClip
-from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
-from moviepy.audio.io.AudioFileClip import AudioFileClip
-from moviepy.audio.AudioClip import AudioClip
-from moviepy.editor import concatenate_videoclips,concatenate_audioclips,TextClip,CompositeVideoClip
-from moviepy.video.fx.accel_decel import accel_decel
-from moviepy.video.fx.blackwhite import blackwhite
-from moviepy.video.fx.blink import blink
-from moviepy.video.fx.colorx import colorx
-from moviepy.video.fx.crop import crop
-from moviepy.video.fx.even_size import even_size
-from moviepy.video.fx.fadein import fadein
-from moviepy.video.fx.fadeout import fadeout
-from moviepy.video.fx.freeze import freeze
-from moviepy.video.fx.freeze_region import freeze_region
-from moviepy.video.fx.gamma_corr import gamma_corr
-from moviepy.video.fx.headblur import headblur
-from moviepy.video.fx.invert_colors import invert_colors
-from moviepy.video.fx.loop import loop
-from moviepy.video.fx.lum_contrast import lum_contrast
-from moviepy.video.fx.make_loopable import make_loopable
-from moviepy.video.fx.margin import margin
-from moviepy.video.fx.mask_and import mask_and
-from moviepy.video.fx.mask_color import mask_color
-from moviepy.video.fx.mask_or import mask_or
-from moviepy.video.fx.mirror_x import mirror_x
-from moviepy.video.fx.mirror_y import mirror_y
-from moviepy.video.fx.painting import painting
-from moviepy.video.fx.resize import resize
-from moviepy.video.fx.rotate import rotate
-from moviepy.video.fx.scroll import scroll
-from moviepy.video.fx.speedx import speedx
-from moviepy.video.fx.supersample import supersample
-from moviepy.video.fx.time_mirror import time_mirror
-from moviepy.video.fx.time_symmetrize import time_symmetrize
-
-from moviepy.audio.fx.audio_fadein import audio_fadein
-from moviepy.audio.fx.audio_fadeout import audio_fadeout
-from moviepy.audio.fx.audio_left_right import audio_left_right
-from moviepy.audio.fx.audio_loop import audio_loop
-from moviepy.audio.fx.audio_normalize import audio_normalize
-from moviepy.audio.fx.volumex import volumex
+from importhelper import *
 
 
 # Windows app icon fix (taskbar and taskbar manager)
@@ -117,6 +76,20 @@ myappid = u'mycompany.myproduct.subproduct.version' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 from __info__ import *
+
+import qdarkstyle
+
+class InfoWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Log")
+        self.setFixedSize(400, 300)
+        self.text_area = QTextEdit(self)
+        self.text_area.setReadOnly(True)
+        self.text_area.setText('')
+        layout = QVBoxLayout()
+        layout.addWidget(self.text_area)
+        self.setLayout(layout)
 
 class VideoWindow(QMainWindow):
 
@@ -132,9 +105,22 @@ class VideoWindow(QMainWindow):
         self.exportResolutionPercentage.setEnabled(flag)
         self.exportFrameRate.setEnabled(flag)
         self.exportSpeedRate.setEnabled(flag)
+        self.autoStartSliderButton.setEnabled(flag)
+        self.autoEndSliderButton.setEnabled(flag)
+
+    def autofillStartMarkerTime(self):
+        time = self.mediaPlayer.position()
+        time = time / 1000
+        self.startMarkerTime.setText(str("{0:.2f}".format(time)))
+
+    def autofillEndMarkerTime(self):
+        time = self.mediaPlayer.position()
+        time = time / 1000
+        self.endMarkerTime.setText(str("{0:.2f}".format(time)))
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
+        # self.setStyleSheet("background-color: #2b2b2b; color: #ffffff;")
         self.setAcceptDrops(True)
         self.setWindowTitle(APP_TITLE) 
         self.setWindowIcon(QIcon("icon-dark.png"))
@@ -167,16 +153,7 @@ class VideoWindow(QMainWindow):
         self.currentPlayTimeLabel.setText("00:00")
     
 
-        # Other stuff
-        self.startMarkerTime    = QLineEdit(self)
-        self.startMarkerTime.setStatusTip("Clip Start Time")
-        self.startMarkerTime.setEnabled(False)
-        self.startMarkerTime.setPlaceholderText("ss:ms")
 
-        self.endMarkerTime      = QLineEdit(self)
-        self.endMarkerTime.setStatusTip("Clip End Time")
-        self.endMarkerTime.setEnabled(False)
-        self.endMarkerTime.setPlaceholderText("ss:ms")
 
         self.symmetrizeCheckbox = QCheckBox("Symmetrize")
         self.symmetrizeCheckbox.setEnabled(False)
@@ -200,7 +177,7 @@ class VideoWindow(QMainWindow):
         self.exportSpeedRate.setPlaceholderText("1")
         self.exportSpeedRate.setText("1")
 
-        self.convertToGifButton = QPushButton("Export As GIF")
+        self.convertToGifButton = QPushButton("Export GIF")
         self.convertToGifButton.setStatusTip('Export video as GIF')
         self.convertToGifButton.clicked.connect(self.saveAsGif)
 
@@ -244,13 +221,46 @@ class VideoWindow(QMainWindow):
         controlLayout.addWidget(self.currentPlayTimeLabel)
         controlLayout.addWidget(self.positionSlider)
 
+        self.startMarkerTime    = QLineEdit(self)
+        self.startMarkerTime.setStatusTip("Clip Start Time")
+        self.startMarkerTime.setPlaceholderText("00.00")
+        self.startMarkerTime.setPlaceholderText("ss.ms")
+        self.startMarkerTime.setEnabled(False)
+
+        self.endMarkerTime      = QLineEdit(self)
+        self.endMarkerTime.setStatusTip("Clip End Time")
+        self.endMarkerTime.setPlaceholderText("00.00")
+        self.endMarkerTime.setPlaceholderText("ss.ms")
+        self.endMarkerTime.setEnabled(False)
+
+        self.autoStartSliderButton = QPushButton()
+        self.autoStartSliderButton.setText("Set clip start to current frame")
+        self.autoStartSliderButton.clicked.connect(self.autofillStartMarkerTime)
+        self.autoStartSliderButton.setEnabled(False)
+
+        startSliderLayout = QHBoxLayout()
+        startSliderLayout.setContentsMargins(0, 0, 0, 0)
+        startSliderLayout.addWidget(self.autoStartSliderButton)
+        startSliderLayout.addWidget(self.startMarkerTime)
+
+        self.autoEndSliderButton = QPushButton()
+        self.autoEndSliderButton.setText("Set clip end to current frame  ")
+        self.autoEndSliderButton.clicked.connect(self.autofillEndMarkerTime)
+        self.autoEndSliderButton.setEnabled(False)
+
+        endSliderLayout = QHBoxLayout()
+        endSliderLayout.setContentsMargins(0, 0, 0, 0)
+        endSliderLayout.addWidget(self.autoEndSliderButton)
+        endSliderLayout.addWidget(self.endMarkerTime)
+
         layout = QVBoxLayout()
         layout.addWidget(videoWidget)
         layout.addLayout(controlLayout)
+        layout.addLayout(startSliderLayout)
+        layout.addLayout(endSliderLayout)
+
 
         layout.addWidget(self.errorLabel)
-        layout.addWidget(self.startMarkerTime)
-        layout.addWidget(self.endMarkerTime)
         layout.addWidget(self.symmetrizeCheckbox)
         layout.addWidget(self.exportResolutionPercentage)
         layout.addWidget(self.exportFrameRate)
@@ -285,9 +295,8 @@ class VideoWindow(QMainWindow):
         filePath = event.mimeData().urls()[0].toLocalFile()
         print(filePath)
 
-
         # check if file is a video
-        if filePath.endswith('.mp4', '.avi', '.mkv', '.mov', '.m4v', '.mpg', '.mpeg', '.wmv', '.flv', '.3gp', '.3g2'):
+        if filePath.endswith(('.mp4', '.avi', '.mkv', '.mov', '.m4v', '.mpg', '.mpeg', '.wmv', '.flv', '.3gp', '.3g2')):
             # set the video path
             self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filePath)))
             self.mediaPlayer.setMedia(
@@ -434,8 +443,11 @@ class VideoWindow(QMainWindow):
         newFilePathDirectory = os.path.dirname(newFilePath)
         # subprocess.Popen(f'explorer {newFilePathDirectory}') # TODO: currently not working: redirects to documents folder instead.
 
-        newWindow = QDialog()
-        newWindow.setWindowTitle("EXPORTED GIF")
+        # open folder with gif
+        # newWindow = QDialog()
+        # newWindow.setWindowTitle("EXPORTED GIF")
+
+        os.startfile(newFilePathDirectory)
 
         # add description label
         # descriptionLabel = QLabel(newWindow)
@@ -474,5 +486,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     player = VideoWindow()
     player.resize(640, 480)
+    # info = InfoWindow()
+    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
     player.show()
+    # info.show()
     sys.exit(app.exec_())

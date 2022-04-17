@@ -96,4 +96,3 @@
 # w.resize(500, 150)
 # app.exec_()
 
-
